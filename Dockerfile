@@ -3,6 +3,7 @@ FROM node:22-slim AS build
 WORKDIR /app
 ENV DATABASE_URL="file:./data/build.db"
 COPY package.json package-lock.json ./
+COPY prisma ./prisma
 RUN npm ci --no-audit --no-fund
 COPY . .
 RUN npx prisma generate && npm run build
