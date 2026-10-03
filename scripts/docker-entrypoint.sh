@@ -7,4 +7,4 @@ if [ "$COUNT" = "0" ]; then
   echo "Empty database — seeding demo data…"
   npm run seed
 fi
-exec npx next start -p 3000
+exec npx next start -p ${PORT:-3000}

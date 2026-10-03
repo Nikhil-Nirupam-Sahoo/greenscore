@@ -1,5 +1,6 @@
 # ---- build stage ----
 FROM node:22-slim AS build
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 ENV DATABASE_URL="file:./data/build.db"
 COPY package.json package-lock.json ./
@@ -10,6 +11,7 @@ RUN npx prisma generate && npm run build
 
 # ---- runtime stage ----
 FROM node:22-slim AS run
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 ENV NODE_ENV=production NODE_OPTIONS=
 COPY --from=build /app /app
