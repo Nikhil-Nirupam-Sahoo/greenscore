@@ -51,6 +51,30 @@ npm run dev        # http://localhost:3000
 | `npm run award-badges` | award streak/consistency badges from real data |
 | `npm run db:push` | sync Prisma schema to SQLite |
 
+## Run it as a web app (deploy / faster production mode)
+
+### Option A — Docker (recommended, one command)
+```bash
+docker build -t greenscore .
+docker run -p 3000:3000 -v greenscore-data:/app/prisma/data -e AUTH_SECRET=$(openssl rand -hex 32) greenscore
+```
+Open http://localhost:3000. The image pushes the schema, seeds demo data on first run
+(SQLite persisted in the named volume at `/app/prisma/data`), and serves the fast
+production build. Upload it to Render/Railway/Fly.io "from Dockerfile" to host it online.
+
+### Option B — free Node hosting (Render / Railway)
+- Build command: `npm ci && npx prisma generate && npm run build`
+- Start command: `npx prisma db push && npm run seed && npx next start -p 3000`
+- Env vars: `AUTH_SECRET`, `DATABASE_URL` (SQLite path on a mounted disk, e.g.
+  `file:./data/prod.db` — or switch `provider` to `postgresql` in `prisma/schema.prisma`
+  and use the service's managed Postgres for serverless platforms).
+
+### Option C — Vercel + managed Postgres
+1. Create a free Postgres DB (Neon/Supabase), copy the connection string.
+2. In `prisma/schema.prisma` set `provider = "postgresql"`.
+3. In the Vercel project set env vars `DATABASE_URL` and `AUTH_SECRET`.
+4. Deploy; locally run `npx prisma db push && npm run seed` once against that DB URL.
+
 ## Docs
 - [docs/SCORING.md](docs/SCORING.md) — weighting, normalisation, benchmarks, CO₂e, improvement, missing-data rules
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — layout, scaling plan, API surface
