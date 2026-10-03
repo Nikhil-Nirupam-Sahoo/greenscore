@@ -243,6 +243,11 @@ model DeviceKey {
   createdAt DateTime @default(now())
 }
 
+model Setting {
+  key   String @id
+  value String
+}
+
 model MonthlyRollup {
   id        String   @id @default(cuid())
   locationId String

@@ -1,5 +1,6 @@
 import { prisma } from '../db'
 import { computeScore } from './engine'
+import { getWeights } from '../settings'
 import { createHash } from 'crypto'
 
 /** (Re)compute ScoreSnapshots for the main campus across all available periods. */
@@ -11,6 +12,7 @@ export async function computeAndStoreScores() {
     .update(factors.map((f) => `${f.category}:${f.factor}:${f.validFrom.toISOString()}`).join('|'))
     .digest('hex')
     .slice(0, 12)
+  const weights = await getWeights()
 
   const rollups = await prisma.monthlyRollup.findMany({ where: { location: { campusId: campus.id } } })
   const periods = [...new Set(rollups.map((r) => r.period))].sort()
@@ -35,6 +37,7 @@ export async function computeAndStoreScores() {
       rollups: periodRollups,
       commutes: periodCommutes,
       factors: factors.map((f) => ({ category: f.category, factor: f.factor })),
+      weights,
       previousTotals,
     })
     await prisma.scoreSnapshot.upsert({
