@@ -1,0 +1,12 @@
+{
+  "name": "NAAC Criterion 7 — Institutional Values and Best Practices (environmental sustainability sub-parameters)",
+  "disclaimer": "Metric IDs and wording below are a starter mapping and MUST be verified against the current official NAAC self-study manual before submission.",
+  "criteria": [
+    { "id": "7.1.1", "text": "Energy conservation: measures, renewable energy use, energy efficiency", "metrics": ["electricity"], "note": "Total kWh, per-capita kWh, solar share if any" },
+    { "id": "7.1.2", "text": "Water conservation, rainwater harvesting, water recycling", "metrics": ["water"], "note": "kL consumed, per-capita L/day" },
+    { "id": "7.1.3", "text": "Solid waste management, recycling, e-waste, hazardous waste protocols", "metrics": ["waste.wet", "waste.dry", "waste.plastic", "waste.ewaste", "waste.hazardous"], "note": "kg by category, diversion rate %" },
+    { "id": "7.1.4", "text": "Green campus initiatives and sustainability programmes", "metrics": ["challenges_completed"] },
+    { "id": "7.1.5", "text": "Environmental audits periodically conducted", "metrics": ["audit_integrity"] },
+    { "id": "transport", "text": "Campus mobility & commute emissions (extended)", "metrics": ["transport_co2e", "sustainable_mode_pct"] }
+  ]
+}

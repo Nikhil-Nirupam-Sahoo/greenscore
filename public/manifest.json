@@ -1,0 +1,9 @@
+{
+  "name": "GreenScore",
+  "short_name": "GreenScore",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#052e16",
+  "theme_color": "#16a34a",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

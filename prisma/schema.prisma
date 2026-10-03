@@ -1,0 +1,273 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Campus {
+  id                String   @id @default(cuid())
+  name              String
+  area_sqm          Float
+  population_students Int
+  population_staff  Int
+  residents_hostel  Int
+  createdAt         DateTime @default(now())
+  locations         Location[]
+  peerOfBand        String?
+}
+
+model Location {
+  id        String   @id @default(cuid())
+  campusId  String
+  campus    Campus   @relation(fields: [campusId], references: [id])
+  name      String
+  type      String   // BUILDING | DEPARTMENT | HOSTEL_BLOCK
+  area_sqm  Float
+  occupancy Int
+  sources   DataSource[]
+  readings  Reading[]
+  rollups   MonthlyRollup[]
+
+  @@index([campusId])
+}
+
+enum Role {
+  ADMIN
+  FACILITY_STAFF
+  STUDENT
+  STAFF
+  AUDITOR
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role
+  departmentId String?
+  commutes     CommuteLog[]
+  points       PointsLedger[]
+  badges       UserBadge[]
+  posts        FeedPost[]
+  comments     Comment[]
+  challenges   ChallengeProgress[]
+  deviceKeys   DeviceKey[]
+}
+
+model DataSource {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // ELECTRICITY | WATER | WASTE | TRANSPORT
+  mode        String   // MANUAL | IOT
+  unit        String
+  locationId  String
+  location    Location @relation(fields: [locationId], references: [id])
+  apiKeyHash  String?
+  readings    Reading[]
+  createdAt   DateTime @default(now())
+
+  @@index([locationId])
+}
+
+model Reading {
+  id          String   @id @default(cuid())
+  value       Float
+  unit        String
+  category    String   // electricity, water, waste.wet, waste.dry, ...
+  subCategory String?
+  periodStart DateTime
+  periodEnd   DateTime
+  locationId  String
+  location    Location @relation(fields: [locationId], references: [id])
+  sourceId    String
+  source      DataSource @relation(fields: [sourceId], references: [id])
+  method      String   // MANUAL | IOT
+  evidencePhotoUrl String?
+  status      String   @default("PENDING") // VERIFIED | PENDING | FLAGGED
+  flagReason  String?
+  idempotencyKey String? @unique
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  @@index([locationId, periodStart, category])
+  @@index([sourceId, periodStart])
+  @@index([status])
+}
+
+model CommuteLog {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  mode        String   // walk cycle bus EV bike car carpool
+  distanceKm  Float
+  date        DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([userId, date])
+}
+
+model EmissionFactor {
+  id        String   @id @default(cuid())
+  category  String
+  factor    Float    // kg CO2e per unit
+  unit      String   // per kWh, per kL, per kg, per km
+  source    String
+  validFrom DateTime
+  active    Boolean  @default(true)
+}
+
+model ScoreSnapshot {
+  id               String   @id @default(cuid())
+  campusId         String
+  period           String   // YYYY-MM
+  locationId       String?
+  totalScore       Float
+  energyScore      Float
+  waterScore       Float
+  wasteScore       Float
+  transportScore   Float
+  improvementDelta Float
+  coverage         Float
+  inputs           String   // JSON of normalised metrics
+  weights          String   // JSON
+  factorsVersion   String
+  formulaVersion   String
+  createdAt        DateTime @default(now())
+
+  @@unique([campusId, period, locationId])
+}
+
+model Challenge {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  targetType  String   // water_reduction | energy_reduction | waste_diversion | sustainable_transport
+  targetPct   Float
+  scopeType   String   // campus | location | department
+  scopeId     String?
+  startDate   DateTime
+  endDate     DateTime
+  baselineValue Float?
+  status      String   @default("ACTIVE") // ACTIVE | COMPLETED
+  progress    ChallengeProgress[]
+}
+
+model ChallengeProgress {
+  id          String   @id @default(cuid())
+  challengeId String
+  challenge   Challenge @relation(fields: [challengeId], references: [id])
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  progressPct Float
+  updatedAt   DateTime @updatedAt
+}
+
+model Badge {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String
+  users       UserBadge[]
+}
+
+model UserBadge {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+  badgeId String
+  badge  Badge  @relation(fields: [badgeId], references: [id])
+  awardedAt DateTime @default(now())
+}
+
+model PointsLedger {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  points    Int
+  reason    String
+  allowed   Boolean  @default(true) // false = rejected by anti-gaming
+  createdAt DateTime @default(now())
+}
+
+model FeedPost {
+  id        String   @id @default(cuid())
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  text      String
+  imageUrl  String?
+  kind      String   @default("post") // post | tip | update | announcement
+  pinned    Boolean  @default(false)
+  moderated Boolean  @default(true)
+  createdAt DateTime @default(now())
+  comments  Comment[]
+}
+
+model Comment {
+  id      String   @id @default(cuid())
+  postId  String
+  post    FeedPost @relation(fields: [postId], references: [id])
+  authorId String
+  author  User     @relation(fields: [authorId], references: [id])
+  text    String
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  seq       Int      @default(0) // set explicitly to max+1 on insert (sqlite-safe)
+  timestamp DateTime @default(now())
+  actorId   String?
+  actorRole String?
+  action    String
+  entity    String?
+  entityId  String?
+  payload   String   // JSON
+  ip        String?
+  userAgent String?
+  prevHash  String
+  hash      String
+
+  @@index([timestamp])
+}
+
+model DeviceKey {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  sourceId  String
+  keyHash   String   @unique
+  createdAt DateTime @default(now())
+}
+
+model MonthlyRollup {
+  id        String   @id @default(cuid())
+  locationId String
+  location  Location @relation(fields: [locationId], references: [id])
+  period    String   // YYYY-MM
+  category  String
+  totalValue Float
+  unit      String
+  coverage  Float
+  manualCount Int
+  iotCount  Int
+  verifiedCount Int
+  flaggedCount Int
+
+  @@unique([locationId, period, category])
+  @@index([period])
+}
+
+model SavedReport {
+  id        String   @id @default(cuid())
+  title     String
+  template  String   // naac | internal
+  params    String   // JSON: range, scope, scopeId
+  filePath  String?
+  integrityHash String
+  createdById String?
+  createdAt DateTime @default(now())
+}
